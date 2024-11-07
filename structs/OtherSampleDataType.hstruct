@@ -1,0 +1,6 @@
+# Hawsoo Struct
+
+struct OtherSampleDataType:
+    string name
+    bool   is_enabled
+    uint64 stride_bytes
