@@ -71,25 +71,55 @@ class DataType:
         self.list_count = list_count
 
 
-def parse_line(file_line: str) -> Tuple[DataType, str]:
-    comment_sym = file_line.find('#')
-    if comment_sym >= 0:
-        file_line = file_line[:comment_sym]
-    tokens = file_line.split()
+@dataclass
+class TokenLine:
+    indentation_amount: int
+    tokens: List[str]
 
-    num_tokens = len(tokens)
-    if num_tokens == 0:
-        return None, None
-    assert num_tokens == 2, f'Improper number of tokens for line: `{file_line}`'
 
-    line_type = DataType(tokens[0])
-    variable_name = tokens[1]
-    return line_type, variable_name
+@dataclass
+class HField:
+    field_type: DataType
+    field_name: str
 
 
 @dataclass
 class HStruct:
-    members: List[DataType]
+    struct_name: str
+    members: List[HField]
+
+
+def read_into_token_line(file_line: str) -> TokenLine:
+    comment_sym = file_line.find('#')
+    if comment_sym >= 0:
+        file_line = file_line[:comment_sym]
+
+    line_len = len(file_line)
+    line_len_left_trimmed = len(file_line.lstrip())
+    indentation_amt = line_len - line_len_left_trimmed
+
+    tokens = file_line.split()
+    return TokenLine(indentation_amt, tokens)
+
+
+def parse_struct_import_token_line(tokens: List[str]) -> str:
+    assert len(tokens) == 2, f'Improper number of tokens in list: {tokens}'
+    assert tokens[0] == 'import', f'First token isn\'t `import`: {tokens[0]}'
+    return tokens[1]
+
+
+def parse_struct_name_token_line(tokens: List[str]) -> str:
+    assert len(tokens) == 2, f'Improper number of tokens in list: {tokens}'
+    assert tokens[0] == 'struct', f'First token isn\'t `struct`: {tokens[0]}'
+    assert tokens[1][-1] == ':', f'Second token doesn\'t end with `:`: {tokens[1]}'
+    return tokens[1][:-1]
+
+
+def parse_struct_member_field_token_line(tokens: List[str]) -> HField:
+    assert len(tokens) == 2, f'Improper number of tokens in list: {tokens}'
+    line_type = DataType(tokens[0])
+    variable_name = tokens[1]
+    return HField(line_type, variable_name)
 
 
 # Generated header comment marking generated code.
@@ -126,12 +156,55 @@ public:
 
 def main():
     #TESTS######
-    asdf = DataType("OtherSampleDataType[]")
-    parse_line("         int64[]    jojo # I need a nap yo")
+    # asdf = DataType("OtherSampleDataType[]")
+    # parse_line("         int64[]    jojo # I need a nap yo")
     #ENDTESTS###
 
-    with open(args.filename) as input_file:
-        pass
+    # Read in all tokens.
+    lines: List[TokenLine] = []
+
+    with open(args.filename, "r") as input_file:
+        for line in input_file:
+            token_line = read_into_token_line(line)
+            if len(token_line.tokens) > 0:
+                lines.append(token_line)
+    
+    # Group read lines into groups based off indentation amount.
+    line_groups: List[List[TokenLine]] = []
+    for line in lines:
+        if line.indentation_amount == 0:
+            line_groups.append([line,])
+        else:
+            line_groups[-1].append(line)
+
+    # Turn token groups into structs.
+    import_list: List[str] = []
+    struct_list: List[HStruct] = []
+    for group in line_groups:
+        # Add import to import list.
+        initial_token = group[0].tokens[0]
+        if initial_token == 'import':
+            # Parse out import statement.
+            import_list.append(
+                parse_struct_import_token_line(group[0].tokens)
+            )
+        elif initial_token == 'struct':
+            # Iterate thru struct members.
+            struct_name = ''
+            struct_members: List[HField] = []
+            first = True
+            for token_line in group:
+                if first:
+                    struct_name = parse_struct_name_token_line(token_line.tokens)
+                    first = False
+                else:
+                    struct_members.append(
+                        parse_struct_member_field_token_line(token_line.tokens)
+                    )
+            struct_list.append(
+                HStruct(struct_name, struct_members)
+            )
+    pass
 
 if __name__ == '__main__':
     main()

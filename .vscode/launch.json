@@ -9,7 +9,7 @@
             "console": "integratedTerminal",
             "args": [
                 "-f",
-                "asdf.hstruct"
+                "structs/SampleDataType.hstruct"
             ]
         }
     ]
