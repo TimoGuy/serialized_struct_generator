@@ -3,7 +3,6 @@
 import OtherSampleDataType
 
 
-
 struct SampleDataType:
     bool   is_enabled
     uint8  sdr_luminance
