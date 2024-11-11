@@ -1,8 +1,8 @@
+import re
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from typing import List, Tuple
-import re
-# from enum import Enum
+from pathlib import Path
 
 # Arg parser.
 parser = ArgumentParser()
@@ -123,7 +123,7 @@ def parse_struct_member_field_token_line(tokens: List[str]) -> HField:
 
 
 # Generated header comment marking generated code.
-generated_code_comment_code = \
+GENERATED_CODE_COMMENT_CODE = \
 """/*
  *    ____   _____   _   _   _____   ____       _      _____   _____   ____       ____    ___    ____    _____ 
  *   / ___| | ____| | \ | | | ____| |  _ \     / \    |_   _| | ____| |  _ \     / ___|  / _ \  |  _ \  | ____|
@@ -135,7 +135,7 @@ generated_code_comment_code = \
 """
 
 # HStruct interface.
-hstruct_ifc_code = \
+HSTRUCT_IFC_CODE = \
 """#pragma once
 
 #include <string>
@@ -204,6 +204,30 @@ def main():
             struct_list.append(
                 HStruct(struct_name, struct_members)
             )
+
+    # Make sure only one struct definition is there.
+    assert len(struct_list) == 1, "Only place 1 struct definition."
+
+    # Make sure struct is same definition as file.
+    fname_only = Path(args.filename).name
+    msg = f"Struct name must match file name. " \
+        f"Struct name: {struct_list[0].struct_name}. File name: {fname_only}."
+    assert fname_only == f"{struct_list[0].struct_name}.hstruct", msg
+
+    # Write out generated file. @DEBUG: just gonna print stuff out for now.
+    print(GENERATED_CODE_COMMENT_CODE)
+    print("#pragma once")
+    print("")
+    print("#include \"hstruct_ifc.h\"")
+
+    for import_em in import_list:
+        print(f"#include \"{import_em}.hstruct.h\"")
+
+    print("")
+    print("")
+
+
+    # End.
     pass
 
 if __name__ == '__main__':
