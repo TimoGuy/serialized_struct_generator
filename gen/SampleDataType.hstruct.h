@@ -7,7 +7,7 @@
 
 struct SampleDataType : public HStruct_ifc
 {
-    bool                  is_enabled;
+    bool                             is_enabled;
     uint8_t                          sdr_luminance;
     int8_t                           some_signed_char;
     uint16_t                         id;

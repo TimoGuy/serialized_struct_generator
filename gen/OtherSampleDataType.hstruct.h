@@ -2,4 +2,7 @@
 
 #include "hstruct_ifc.h"
 
-OtherSampleDataType mousallini at least.
+struct OtherSampleDataType
+{
+    uint8_t _;
+};

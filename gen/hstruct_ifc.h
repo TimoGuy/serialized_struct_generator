@@ -10,6 +10,12 @@
 
 #include <string>
 
+// Make sure is always dealing in little endian.
+#if _DEBUG
+#include <bit>
+static_assert(std::endian::native == std::endian::little);
+#endif
+
 
 class HStruct_ifc
 {

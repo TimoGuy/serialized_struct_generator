@@ -140,6 +140,12 @@ HSTRUCT_IFC_CODE = \
 
 #include <string>
 
+// Make sure is always dealing in little endian.
+#if _DEBUG
+#include <bit>
+static_assert(std::endian::native == std::endian::little);
+#endif
+
 
 class HStruct_ifc
 {
@@ -225,6 +231,18 @@ def main():
 
     print("")
     print("")
+
+    for struct in struct_list:
+        print(f"struct {struct.struct_name} : public HStruct_ifc")
+        print("{")
+
+        # Write out member variables.
+        for member in struct.members:
+            member.field_type # @TODO: START HERE!!!! MAKE THE ACTUAL hstruct FIELD TYPE TO c++ FIELD TYPE CONVERSION!
+            print(f"{member.field_type.type_name} {member.field_name};")
+
+        print("};")
+        print("")
 
 
     # End.
