@@ -233,6 +233,7 @@ def main():
     print("")
 
     for struct in struct_list:
+        # Start struct.
         print(f"struct {struct.struct_name} : public HStruct_ifc")
         print("{")
 
@@ -241,6 +242,23 @@ def main():
             member.field_type # @TODO: START HERE!!!! MAKE THE ACTUAL hstruct FIELD TYPE TO c++ FIELD TYPE CONVERSION!
             print(f"{member.field_type.type_name} {member.field_name};")
 
+        # Write out dump func.
+        print(f"void serialize_dump(const std::string& fname) override")
+        print("{")
+        # @TODO: open file write connection.
+        for member in struct.members:
+            member.field_type # @TODO: get certain function dumping type.
+        print("}")
+
+        # Write out load func.
+        print(f"void serialize_load(const std::string& fname) override")
+        print("{")
+        # @TODO: open file read connection.
+        for member in struct.members:
+            member.field_type # @TODO: get certain function loading type.
+        print("}")
+
+        # End struct.
         print("};")
         print("")
 
