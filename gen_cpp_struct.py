@@ -232,6 +232,7 @@ def main():
     print("")
     print("")
 
+
     for struct in struct_list:
         # Start struct.
         print(f"struct {struct.struct_name} : public HStruct_ifc")
@@ -242,20 +243,100 @@ def main():
             member.field_type # @TODO: START HERE!!!! MAKE THE ACTUAL hstruct FIELD TYPE TO c++ FIELD TYPE CONVERSION!
             print(f"{member.field_type.type_name} {member.field_name};")
 
-        # Write out dump func.
-        print(f"void serialize_dump(const std::string& fname) override")
+
+        # serialize_dump().
+        print("void serialize_dump(const std::string& fname) override")
         print("{")
-        # @TODO: open file write connection.
-        for member in struct.members:
-            member.field_type # @TODO: get certain function dumping type.
+
+        # Dump struct data into buffer.
+        print("SerialBuffer sb;")
+        print("write_data_to_serial_buffer(sb);")
+
+        # Write data to disk.
+        print("bool result{ sb.save_buffer_to_disk(fname) };")
+        print("assert(result);")
         print("}")
 
-        # Write out load func.
-        print(f"void serialize_load(const std::string& fname) override")
+
+        # serialize_load().
+        print("void serialize_load(const std::string& fname) override")
         print("{")
-        # @TODO: open file read connection.
+
+        # Read data from disk.
+        print("SerialBuffer sb;")
+        print("bool result{ sb.load_buffer_from_disk(fname) };")
+        print("assert(result);")
+        print("read_data_from_serial_buffer(sb);")
+
+        print("}")
+
+
+        # write_data_to_serial_buffer().
+        print("void write_data_to_serial_buffer(SerialBuffer& buffer) override")
+        print("{")
+
+        # Write out member variables.
         for member in struct.members:
-            member.field_type # @TODO: get certain function loading type.
+            iterations = 1  # Default 1 for if not a list.
+            if member.field_type.is_list_of_type:
+                if member.field_type.list_count == -1:
+                    # Is vector, write count as int right now.
+                    print(f"size_t {member.field_name}__list_count{{ {member.field_name}.size() }};")
+                    print(f"sb.write_elem(&{member.field_name}__list_count, sizeof(size_t));")
+                    iterations = f"{member.field_name}__list_count"
+                else:
+                    # Is array, use fixed count.
+                    iterations = member.field_type.list_count
+                    assert iterations > 0, f"Bad list_count: {iterations}"
+
+            # Write out elements.
+            field_suffix = ""
+            if iterations != 1:
+                print(f"for (size_t i = 0; i < {iterations}; i++)")
+                field_suffix = "[i]"
+            if member.field_type.is_builtin_primitive:
+                # Write primitive.
+                print(f"sb.write_elem(&{member.field_name}{field_suffix}, sizeof({member.field_type.type_name}));")
+            else:
+                # Recurse thru HStruct write func.
+                print(f"{member.field_name}{field_suffix}.write_data_to_serial_buffer(sb);")
+
+
+        print("}")
+
+
+        # read_data_from_serial_buffer().
+        print(f"void read_data_from_serial_buffer(SerialBuffer& buffer) override")
+        print("{")
+
+        # Read in member variables.
+        for member in struct.members:
+            iterations = 1  # Default 1 for if not a list.
+            if member.field_type.is_list_of_type:
+                if member.field_type.list_count == -1:
+                    # Is vector, read count as int right now.
+                    print(f"size_t {member.field_name}__list_count{{")
+                    print(f"*reinterpret_cast<{member.field_type.type_name}*>(sb.read_elem(sizeof(size_t)))")
+                    print("};")
+                    iterations = f"{member.field_name}__list_count"
+                else:
+                    # Is array, use fixed count.
+                    iterations = member.field_type.list_count
+                    assert iterations > 0, f"Bad list_count: {iterations}"
+
+            # Write out elements.
+            field_suffix = ""
+            if iterations != 1:
+                print(f"for (size_t i = 0; i < {iterations}; i++)")
+                field_suffix = "[i]"
+            if member.field_type.is_builtin_primitive:
+                # Read primitive.
+                # @TODO: fix `field_suffix` assignment to use `emplace_back()` if a vector (not required for fixed size std::array)
+                print(f"{member.field_name}{field_suffix} = *reinterpret_cast<{member.field_type.type_name}*>sb.read_elem(&{member.field_name}{field_suffix}, sizeof({member.field_type.type_name}));")
+            else:
+                # Recurse thru HStruct read func.
+                print(f"{member.field_name}{field_suffix}.read_data_from_serial_buffer(sb);")
+
         print("}")
 
         # End struct.

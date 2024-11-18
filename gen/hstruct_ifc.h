@@ -9,6 +9,7 @@
 #pragma once
 
 #include <string>
+#include "SerialBuffer.h"
 
 // Make sure is always dealing in little endian.
 #if _DEBUG
@@ -26,4 +27,11 @@ public:
 
     // Loads HStruct from a binary serialization at `fname`.
     virtual void serialize_load(const std::string& fname) = 0;
+
+protected:
+    // Internal act of collection of data to SerialBuffer.
+    virtual void write_data_to_serial_buffer(SerialBuffer& buffer) = 0;
+
+    // Internal propagation of data to HStruct.
+    virtual void read_data_from_serial_buffer(SerialBuffer& buffer) = 0;
 };
