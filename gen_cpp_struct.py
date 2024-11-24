@@ -1,7 +1,7 @@
 import re
 from argparse import ArgumentParser
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from pathlib import Path
 
 # Arg parser.
@@ -29,9 +29,19 @@ args = parser.parse_args()
 #     STRUCT = 12
 
 
-all_primitive_names = [
-    'bool', 'uint8', 'int8', 'uint16', 'int16', 'uint32', 'int32', 'uint64', 'int64', 'float', 'string'
-]
+all_primitive_names_to_cpp_type: Dict[str, str] = {
+    'bool': 'bool',
+    'uint8': 'uint8_t',
+    'int8': 'int8_t',
+    'uint16': 'uint16_t',
+    'int16': 'int16_t',
+    'uint32': 'uint32_t',
+    'int32': 'int32_t',
+    'uint64': 'uint64_t',
+    'int64': 'int64_t',
+    'float': 'float_t',
+    'string': 'std::string',
+}
 
 
 class DataType:
@@ -61,12 +71,15 @@ class DataType:
             is_list_of_type = False
             type_str_stem = type_token
 
+        is_builtin_primitive = bool(type_str_stem in all_primitive_names_to_cpp_type.keys())
+        type_name_cpp = (all_primitive_names_to_cpp_type[type_str_stem] if is_builtin_primitive else type_str_stem)
+
         # Simple check that there aren't any special characters in cleaned token str.
         assert re.compile(r"\W").match(type_str_stem) is None, f'Malformed type: {type_token}'
 
         # Finish.
-        self.type_name = type_str_stem
-        self.is_builtin_primitive = bool(type_str_stem in all_primitive_names)
+        self.type_name = type_name_cpp
+        self.is_builtin_primitive = is_builtin_primitive
         self.is_list_of_type = is_list_of_type
         self.list_count = list_count
 
@@ -272,7 +285,7 @@ def main():
 
 
         # write_data_to_serial_buffer().
-        print("void write_data_to_serial_buffer(SerialBuffer& buffer) override")
+        print("void write_data_to_serial_buffer(SerialBuffer& sb) override")
         print("{")
 
         # Write out member variables.
@@ -306,7 +319,7 @@ def main():
 
 
         # read_data_from_serial_buffer().
-        print(f"void read_data_from_serial_buffer(SerialBuffer& buffer) override")
+        print(f"void read_data_from_serial_buffer(SerialBuffer& sb) override")
         print("{")
 
         # Read in member variables.
