@@ -8,7 +8,9 @@
  */
 #pragma once
 
+#include <array>
 #include <string>
+#include <vector>
 #include "SerialBuffer.h"
 
 // Make sure is always dealing in little endian.
