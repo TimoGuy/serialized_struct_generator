@@ -280,7 +280,7 @@ def main():
     assert fname_only == f"{struct_list[0].struct_name}.hstruct", msg
 
     # Write out generated file.
-    with CppFilePrinter("gen/jojo.hstruct.h") as cfp:
+    with CppFilePrinter(f"gen/{fname_only}.h") as cfp:
         cfp.write_line(GENERATED_CODE_COMMENT_CODE)
         cfp.write_line("#pragma once")
         cfp.write_line("")
@@ -384,7 +384,7 @@ def main():
                     if member.field_type.list_count == -1:
                         # Is vector, read count as int right now.
                         cfp.write_line(f"size_t {member.field_name}__list_count{{")
-                        cfp.write_line(f"*reinterpret_cast<{member.field_type.type_name}*>(sb.read_elem(sizeof(size_t)))")
+                        cfp.write_line(f"*reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))")
                         cfp.write_line("};")
                         iterations = f"{member.field_name}__list_count"
                     else:
