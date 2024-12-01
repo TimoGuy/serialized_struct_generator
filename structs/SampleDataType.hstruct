@@ -19,5 +19,6 @@ struct SampleDataType:
     uint32[] ipv4_addresses
     uint32[8] banana_indexes
 
-    OtherSampleDataType   parent_obj
-    OtherSampleDataType[] children_objs
+    OtherSampleDataType    parent_obj
+    OtherSampleDataType[]  children_objs
+    OtherSampleDataType[2] banana_objs

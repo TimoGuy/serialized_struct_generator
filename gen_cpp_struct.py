@@ -339,7 +339,16 @@ def main():
             cfp.write_line("{")
 
             # Write out member variables.
+            first = True
+            prev_was_block = False
             for member in struct.members:
+                # Add separating line if prev written section was a block.
+                if not first:
+                    if prev_was_block or member.field_type.is_list_of_type:
+                        cfp.write_line("")
+
+                prev_was_block = False
+
                 iterations = 1  # Default 1 for if not a list.
                 if member.field_type.is_list_of_type:
                     if member.field_type.list_count == -1:
@@ -366,7 +375,9 @@ def main():
                     cfp.write_line(f"{member.field_name}{field_suffix}.write_data_to_serial_buffer(sb);")
                 if iterations != 1:
                     cfp.write_line("}")
-                    cfp.write_line("")
+
+                prev_was_block = iterations != 1
+                first = False
 
 
             cfp.write_line("}")
@@ -378,18 +389,32 @@ def main():
             cfp.write_line("{")
 
             # Read in member variables.
+            first = True
+            prev_was_block = False
             for member in struct.members:
+                # Add separating line if prev written section was a block.
+                if not first:
+                    if prev_was_block or member.field_type.is_list_of_type:
+                        cfp.write_line("")
+
+                prev_was_block = False
+
                 iterations = 1  # Default 1 for if not a list.
+                use_emplace_back = False
                 if member.field_type.is_list_of_type:
                     if member.field_type.list_count == -1:
                         # Is vector, read count as int right now.
                         cfp.write_line(f"size_t {member.field_name}__list_count{{")
                         cfp.write_line(f"*reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))")
                         cfp.write_line("};")
+                        cfp.write_line(f"{member.field_name}.clear();")
+                        cfp.write_line(f"{member.field_name}.reserve({member.field_name}__list_count);")
                         iterations = f"{member.field_name}__list_count"
+                        use_emplace_back = True
                     else:
                         # Is array, use fixed count.
                         iterations = member.field_type.list_count
+                        use_emplace_back = False
                         assert iterations > 0, f"Bad list_count: {iterations}"
 
                 # Write out elements.
@@ -398,16 +423,26 @@ def main():
                     cfp.write_line(f"for (size_t i = 0; i < {iterations}; i++)")
                     cfp.write_line("{")
                     field_suffix = "[i]"
-                if member.field_type.is_builtin_primitive:
-                    # Read primitive.
-                    # @TODO: fix `field_suffix` assignment to use `emplace_back()` if a vector (not required for fixed size std::array)
-                    cfp.write_line(f"{member.field_name}{field_suffix} = *reinterpret_cast<{member.field_type.type_name}*>(sb.read_elem(sizeof({member.field_type.type_name})));")
+                if use_emplace_back:
+                    if member.field_type.is_builtin_primitive:
+                        # Read primitive.
+                        cfp.write_line(f"{member.field_name}.emplace_back(*reinterpret_cast<{member.field_type.type_name}*>(sb.read_elem(sizeof({member.field_type.type_name}))));")
+                    else:
+                        # Recurse thru HStruct read func.
+                        cfp.write_line(f"{member.field_name}.emplace_back({member.field_type.type_name}{{}});")
+                        cfp.write_line(f"{member.field_name}.back().read_data_from_serial_buffer(sb);")
                 else:
-                    # Recurse thru HStruct read func.
-                    cfp.write_line(f"{member.field_name}{field_suffix}.read_data_from_serial_buffer(sb);")
+                    if member.field_type.is_builtin_primitive:
+                        # Read primitive.
+                        cfp.write_line(f"{member.field_name}{field_suffix} = *reinterpret_cast<{member.field_type.type_name}*>(sb.read_elem(sizeof({member.field_type.type_name})));")
+                    else:
+                        # Recurse thru HStruct read func.
+                        cfp.write_line(f"{member.field_name}{field_suffix}.read_data_from_serial_buffer(sb);")
                 if iterations != 1:
                     cfp.write_line("}")
-                    cfp.write_line("")
+
+                prev_was_block = iterations != 1
+                first = False
 
             cfp.write_line("}")
 

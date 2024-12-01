@@ -30,6 +30,7 @@ struct SampleDataType : public HStruct_ifc
     std::array<uint32_t, 8> banana_indexes;
     OtherSampleDataType parent_obj;
     std::vector<OtherSampleDataType> children_objs;
+    std::array<OtherSampleDataType, 2> banana_objs;
 
     void serialize_dump(const std::string& fname) override
     {
@@ -60,6 +61,7 @@ struct SampleDataType : public HStruct_ifc
         sb.write_elem(&grid_pos, sizeof(int64_t));
         sb.write_elem(&slider_pos, sizeof(float_t));
         sb.write_elem(&name, sizeof(std::string));
+
         size_t ipv4_addresses__list_count{ ipv4_addresses.size() };
         sb.write_elem(&ipv4_addresses__list_count, sizeof(size_t));
         for (size_t i = 0; i < ipv4_addresses__list_count; i++)
@@ -73,6 +75,7 @@ struct SampleDataType : public HStruct_ifc
         }
 
         parent_obj.write_data_to_serial_buffer(sb);
+
         size_t children_objs__list_count{ children_objs.size() };
         sb.write_elem(&children_objs__list_count, sizeof(size_t));
         for (size_t i = 0; i < children_objs__list_count; i++)
@@ -80,6 +83,10 @@ struct SampleDataType : public HStruct_ifc
             children_objs[i].write_data_to_serial_buffer(sb);
         }
 
+        for (size_t i = 0; i < 2; i++)
+        {
+            banana_objs[i].write_data_to_serial_buffer(sb);
+        }
     }
 
     void read_data_from_serial_buffer(SerialBuffer& sb) override
@@ -95,12 +102,15 @@ struct SampleDataType : public HStruct_ifc
         grid_pos = *reinterpret_cast<int64_t*>(sb.read_elem(sizeof(int64_t)));
         slider_pos = *reinterpret_cast<float_t*>(sb.read_elem(sizeof(float_t)));
         name = *reinterpret_cast<std::string*>(sb.read_elem(sizeof(std::string)));
+
         size_t ipv4_addresses__list_count{
             *reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))
         };
+        ipv4_addresses.clear();
+        ipv4_addresses.reserve(ipv4_addresses__list_count);
         for (size_t i = 0; i < ipv4_addresses__list_count; i++)
         {
-            ipv4_addresses[i] = *reinterpret_cast<uint32_t*>(sb.read_elem(sizeof(uint32_t)));
+            ipv4_addresses.emplace_back(*reinterpret_cast<uint32_t*>(sb.read_elem(sizeof(uint32_t))));
         }
 
         for (size_t i = 0; i < 8; i++)
@@ -109,13 +119,21 @@ struct SampleDataType : public HStruct_ifc
         }
 
         parent_obj.read_data_from_serial_buffer(sb);
+
         size_t children_objs__list_count{
             *reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))
         };
+        children_objs.clear();
+        children_objs.reserve(children_objs__list_count);
         for (size_t i = 0; i < children_objs__list_count; i++)
         {
-            children_objs[i].read_data_from_serial_buffer(sb);
+            children_objs.emplace_back(OtherSampleDataType{});
+            children_objs.back().read_data_from_serial_buffer(sb);
         }
 
+        for (size_t i = 0; i < 2; i++)
+        {
+            banana_objs[i].read_data_from_serial_buffer(sb);
+        }
     }
 };
