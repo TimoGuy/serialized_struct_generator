@@ -11,7 +11,7 @@
 #include <array>
 #include <string>
 #include <vector>
-#include "SerialBuffer.h"
+#include "serial_buffer.h"
 
 // Make sure is always dealing in little endian.
 #if _DEBUG

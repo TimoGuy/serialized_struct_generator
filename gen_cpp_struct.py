@@ -189,7 +189,7 @@ HSTRUCT_IFC_CODE = \
 #include <array>
 #include <string>
 #include <vector>
-#include "SerialBuffer.h"
+#include "serial_buffer.h"
 
 // Make sure is always dealing in little endian.
 #if _DEBUG
@@ -554,7 +554,7 @@ def main():
         cfp.write_line(HSTRUCT_IFC_CODE)
 
     # Write Serial buffer file.
-    with CppFilePrinter(f"gen/SerialBuffer.h") as cfp:
+    with CppFilePrinter(f"gen/serial_buffer.h") as cfp:
         cfp.write_line(GENERATED_CODE_COMMENT_CODE)
         cfp.write_line(SERIAL_BUFFER_CODE)
     
