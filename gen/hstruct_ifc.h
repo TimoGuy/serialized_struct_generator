@@ -15,6 +15,8 @@
 
 // Make sure is always dealing in little endian.
 #if _DEBUG
+#include <version>
+static_assert(__cplusplus >= 202002L);
 #include <bit>
 static_assert(std::endian::native == std::endian::little);
 #endif
