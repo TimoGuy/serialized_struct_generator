@@ -25,6 +25,8 @@ struct SampleDataType : public HStruct_ifc
     int64_t grid_pos;
     float_t slider_pos;
     std::string name;
+    std::vector<std::string> tokens;
+    std::array<std::string, 2> greeting_and_response;
     std::vector<uint32_t> ipv4_addresses;
     std::array<uint32_t, 8> banana_indexes;
     OtherSampleDataType parent_obj;
@@ -59,7 +61,25 @@ struct SampleDataType : public HStruct_ifc
         sb.write_elem(&memory_pos, sizeof(uint64_t));
         sb.write_elem(&grid_pos, sizeof(int64_t));
         sb.write_elem(&slider_pos, sizeof(float_t));
-        sb.write_elem(&name, sizeof(std::string));
+        size_t name__str_length{ name.length() };
+        sb.write_elem(&name__str_length, sizeof(size_t));
+        sb.write_elem(name.data(), sizeof(char) * name__str_length);
+
+        size_t tokens__list_count{ tokens.size() };
+        sb.write_elem(&tokens__list_count, sizeof(size_t));
+        for (size_t i = 0; i < tokens__list_count; i++)
+        {
+            size_t tokens__str_length{ tokens[i].length() };
+            sb.write_elem(&tokens__str_length, sizeof(size_t));
+            sb.write_elem(tokens[i].data(), sizeof(char) * tokens__str_length);
+        }
+
+        for (size_t i = 0; i < 2; i++)
+        {
+            size_t greeting_and_response__str_length{ greeting_and_response[i].length() };
+            sb.write_elem(&greeting_and_response__str_length, sizeof(size_t));
+            sb.write_elem(greeting_and_response[i].data(), sizeof(char) * greeting_and_response__str_length);
+        }
 
         size_t ipv4_addresses__list_count{ ipv4_addresses.size() };
         sb.write_elem(&ipv4_addresses__list_count, sizeof(size_t));
@@ -100,7 +120,31 @@ struct SampleDataType : public HStruct_ifc
         memory_pos = *reinterpret_cast<uint64_t*>(sb.read_elem(sizeof(uint64_t)));
         grid_pos = *reinterpret_cast<int64_t*>(sb.read_elem(sizeof(int64_t)));
         slider_pos = *reinterpret_cast<float_t*>(sb.read_elem(sizeof(float_t)));
-        name = *reinterpret_cast<std::string*>(sb.read_elem(sizeof(std::string)));
+        size_t name__str_length{
+            *reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))
+        };
+        name = std::string{ reinterpret_cast<const char*>(sb.read_elem(sizeof(char) * name__str_length)), name__str_length };
+
+        size_t tokens__list_count{
+            *reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))
+        };
+        tokens.clear();
+        tokens.reserve(tokens__list_count);
+        for (size_t i = 0; i < tokens__list_count; i++)
+        {
+            size_t tokens__str_length{
+                *reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))
+            };
+            tokens.emplace_back(reinterpret_cast<const char*>(sb.read_elem(sizeof(char) * tokens__str_length)), tokens__str_length);
+        }
+
+        for (size_t i = 0; i < 2; i++)
+        {
+            size_t greeting_and_response__str_length{
+                *reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))
+            };
+            greeting_and_response[i] = std::string{ reinterpret_cast<const char*>(sb.read_elem(sizeof(char) * greeting_and_response__str_length)), greeting_and_response__str_length };
+        }
 
         size_t ipv4_addresses__list_count{
             *reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))

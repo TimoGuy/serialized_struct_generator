@@ -72,6 +72,7 @@ class CppFilePrinter:
 class DataType:
     type_name: str
     is_builtin_primitive: bool
+    is_string: bool
     is_list_of_type: bool
     list_count: int  # If -1 then list becomes std::vector. If 0, then fail. If >0, then list becomes std::array.
 
@@ -97,6 +98,7 @@ class DataType:
             type_str_stem = type_token
 
         is_builtin_primitive = bool(type_str_stem in all_primitive_names_to_cpp_type.keys())
+        is_string = bool(type_str_stem == 'string')
         type_name_cpp = (all_primitive_names_to_cpp_type[type_str_stem] if is_builtin_primitive else type_str_stem)
 
         # Simple check that there aren't any special characters in cleaned token str.
@@ -105,6 +107,7 @@ class DataType:
         # Finish.
         self.type_name = type_name_cpp
         self.is_builtin_primitive = is_builtin_primitive
+        self.is_string = is_string
         self.is_list_of_type = is_list_of_type
         self.list_count = list_count
 
@@ -468,7 +471,12 @@ def main():
                     field_suffix = "[i]"
                 if member.field_type.is_builtin_primitive:
                     # Write primitive.
-                    cfp.write_line(f"sb.write_elem(&{member.field_name}{field_suffix}, sizeof({member.field_type.type_name}));")
+                    if member.field_type.is_string:
+                        cfp.write_line(f"size_t {member.field_name}__str_length{{ {member.field_name}{field_suffix}.length() }};")
+                        cfp.write_line(f"sb.write_elem(&{member.field_name}__str_length, sizeof(size_t));")
+                        cfp.write_line(f"sb.write_elem({member.field_name}{field_suffix}.data(), sizeof(char) * {member.field_name}__str_length);")
+                    else:
+                        cfp.write_line(f"sb.write_elem(&{member.field_name}{field_suffix}, sizeof({member.field_type.type_name}));")
                 else:
                     # Recurse thru HStruct write func.
                     cfp.write_line(f"{member.field_name}{field_suffix}.write_data_to_serial_buffer(sb);")
@@ -525,7 +533,13 @@ def main():
                 if use_emplace_back:
                     if member.field_type.is_builtin_primitive:
                         # Read primitive.
-                        cfp.write_line(f"{member.field_name}.emplace_back(*reinterpret_cast<{member.field_type.type_name}*>(sb.read_elem(sizeof({member.field_type.type_name}))));")
+                        if member.field_type.is_string:
+                            cfp.write_line(f"size_t {member.field_name}__str_length{{")
+                            cfp.write_line(f"*reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))")
+                            cfp.write_line("};")
+                            cfp.write_line(f"{member.field_name}.emplace_back(reinterpret_cast<const char*>(sb.read_elem(sizeof(char) * {member.field_name}__str_length)), {member.field_name}__str_length);")
+                        else:
+                            cfp.write_line(f"{member.field_name}.emplace_back(*reinterpret_cast<{member.field_type.type_name}*>(sb.read_elem(sizeof({member.field_type.type_name}))));")
                     else:
                         # Recurse thru HStruct read func.
                         cfp.write_line(f"{member.field_name}.emplace_back({member.field_type.type_name}{{}});")
@@ -533,7 +547,13 @@ def main():
                 else:
                     if member.field_type.is_builtin_primitive:
                         # Read primitive.
-                        cfp.write_line(f"{member.field_name}{field_suffix} = *reinterpret_cast<{member.field_type.type_name}*>(sb.read_elem(sizeof({member.field_type.type_name})));")
+                        if member.field_type.is_string:
+                            cfp.write_line(f"size_t {member.field_name}__str_length{{")
+                            cfp.write_line(f"*reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))")
+                            cfp.write_line("};")
+                            cfp.write_line(f"{member.field_name}{field_suffix} = std::string{{ reinterpret_cast<const char*>(sb.read_elem(sizeof(char) * {member.field_name}__str_length)), {member.field_name}__str_length }};")
+                        else:
+                            cfp.write_line(f"{member.field_name}{field_suffix} = *reinterpret_cast<{member.field_type.type_name}*>(sb.read_elem(sizeof({member.field_type.type_name})));")
                     else:
                         # Recurse thru HStruct read func.
                         cfp.write_line(f"{member.field_name}{field_suffix}.read_data_from_serial_buffer(sb);")

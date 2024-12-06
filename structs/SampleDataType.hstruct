@@ -4,19 +4,21 @@ import OtherSampleDataType
 
 
 struct SampleDataType:
-    bool   is_enabled
-    uint8  sdr_luminance
-    int8   some_signed_char
-    uint16 id
-    int16  idk_what_this_could_be
-    uint32 complexity
-    int32  some_rando_value
-    uint64 memory_pos
-    int64  grid_pos
-    float  slider_pos
-    string name
+    bool      is_enabled
+    uint8     sdr_luminance
+    int8      some_signed_char
+    uint16    id
+    int16     idk_what_this_could_be
+    uint32    complexity
+    int32     some_rando_value
+    uint64    memory_pos
+    int64     grid_pos
+    float     slider_pos
+    string    name
+    string[]  tokens
+    string[2] greeting_and_response
 
-    uint32[] ipv4_addresses
+    uint32[]  ipv4_addresses
     uint32[8] banana_indexes
 
     OtherSampleDataType    parent_obj

@@ -35,14 +35,19 @@ struct OtherSampleDataType : public HStruct_ifc
 
     void write_data_to_serial_buffer(SerialBuffer& sb) override
     {
-        sb.write_elem(&name, sizeof(std::string));
+        size_t name__str_length{ name.length() };
+        sb.write_elem(&name__str_length, sizeof(size_t));
+        sb.write_elem(name.data(), sizeof(char) * name__str_length);
         sb.write_elem(&is_enabled, sizeof(bool));
         sb.write_elem(&stride_bytes, sizeof(uint64_t));
     }
 
     void read_data_from_serial_buffer(SerialBuffer& sb) override
     {
-        name = *reinterpret_cast<std::string*>(sb.read_elem(sizeof(std::string)));
+        size_t name__str_length{
+            *reinterpret_cast<size_t*>(sb.read_elem(sizeof(size_t)))
+        };
+        name = std::string{ reinterpret_cast<const char*>(sb.read_elem(sizeof(char) * name__str_length)), name__str_length };
         is_enabled = *reinterpret_cast<bool*>(sb.read_elem(sizeof(bool)));
         stride_bytes = *reinterpret_cast<uint64_t*>(sb.read_elem(sizeof(uint64_t)));
     }
